@@ -1,0 +1,1 @@
+docker exec -it php_server /bin/bash
