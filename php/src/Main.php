@@ -64,6 +64,10 @@ class Main
         return false;
     }
 
+    public function getUserId() {
+        return $this->tokenInfo["sub"];
+    }
+
     public function publicEndpoint()
     {
         return "Hello from the public endpoint! You don't need to be authenticated to see this.";

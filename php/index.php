@@ -3,7 +3,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
-$dotenv->required(['AUTH0_DOMAIN', 'AUTH0_AUDIENCE'])->notEmpty();
+$dotenv->required(['AUTH0_DOMAIN', 'AUTH0_AUDIENCE', 'DB_HOSTNAME', 'DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE'])->notEmpty();
 
 $app = new \App\Main([
     'issuer' => 'https://' . $_ENV['AUTH0_DOMAIN'] . '/',
@@ -11,6 +11,8 @@ $app = new \App\Main([
     'algorithm' => $_ENV['AUTH0_SIGNING_ALGORITHM'] ?? 'RS256',
     'secret' => $_ENV['AUTH0_SIGNING_SECRET'] ?? null,
 ]);
+
+
 
 // Create Router instance
 $router = new \Bramus\Router\Router();
@@ -23,14 +25,6 @@ function sendCorsHeaders()
     header("Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE");
 }
 
-function sendResponse($httpStatus, $message, $error = false)
-{
-    header("HTTP/1.0 $httpStatus");
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['status' => $error ? 'error' : 'ok', 'message' => $message], JSON_PRETTY_PRINT);
-    exit();
-}
-
 $router->options('/.*', function () {
     sendCorsHeaders();
     exit();
@@ -39,7 +33,7 @@ $router->options('/.*', function () {
 sendCorsHeaders();
 
 // Check JWT on private routes
-$router->before('GET', '/api/private.*', function () use ($app) {
+$router->before('GET', '/api/data.*', function () use ($app) {
     $requestHeaders = apache_request_headers();
 
     if (isset($_GET['token'])) {
@@ -49,7 +43,7 @@ $router->before('GET', '/api/private.*', function () use ($app) {
     }
 
     if (!isset($requestHeaders['authorization']) && !isset($requestHeaders['Authorization'])) {
-        sendResponse('401 Unauthorized', 'No token provided.');
+        App\HttpHelper::sendMessage('401 Unauthorized', 'No token provided.');
     }
 
     $authorizationHeader = isset($requestHeaders['authorization'])
@@ -57,7 +51,7 @@ $router->before('GET', '/api/private.*', function () use ($app) {
         : $requestHeaders['Authorization'];
 
     if ($authorizationHeader == null) {
-        sendResponse('401 Unauthorized', 'No authorization header sent.');
+        App\HttpHelper::sendMessage('401 Unauthorized', 'No authorization header sent.');
     }
 
     $authorizationHeader = str_replace('Bearer ', '', $authorizationHeader);
@@ -66,31 +60,24 @@ $router->before('GET', '/api/private.*', function () use ($app) {
     try {
         $app->setCurrentToken($token);
     } catch (\Exception $e) {
-        sendResponse('401 Unauthorized', $e->getMessage(), true);
+        App\HttpHelper::sendMessage('401 Unauthorized', $e->getMessage(), true);
     }
+
+});
+
+$router->mount('/api/data', function() use ($app, $router) {
+    $router->setNamespace('\App');
+    $wdc = new \App\WhiskeyDataController($app);
+    $router->get('/(.*)/(.*)', function($table, $id) use ($wdc) {$wdc->getItem($table, $id, null);});
+    $router->get('/(.*)', function($table) use ($wdc) {$wdc->getList($table);});
 });
 
 $router->get('/api/public', function () use ($app) {
-    sendResponse('200 OK', $app->publicEndpoint());
-});
-
-$router->get('/api/private', function () use ($app) {
-    sendResponse('200 OK', $app->privateEndpoint().' '.json_encode(apache_request_headers()));
-});
-
-// Check for read:messages scope
-$router->before('GET', '/api/private-scoped', function () use ($app) {
-    if (!$app->checkScope('read:messages')) {
-        sendResponse('403 Forbidden', 'Insufficient scope.', true);
-    }
-});
-
-$router->get('/api/private-scoped', function () use ($app) {
-    sendResponse('200 OK', $app->privateScopedEndpoint());
+    App\HttpHelper::sendMessage('200 OK', $app->publicEndpoint());
 });
 
 $router->set404(function () {
-    sendResponse('404 Not Found', 'Page not found.', true);
+    App\HttpHelper::sendMessage('404 Not Found', 'Page not found.', true);
 });
 
 // Run the Router
