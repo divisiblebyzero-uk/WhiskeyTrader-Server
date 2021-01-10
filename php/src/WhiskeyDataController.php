@@ -19,14 +19,14 @@ class WhiskeyDataController {
 
         $db = new Database();
         $this->conn = $db->getConnection();
-
         $this->app = $app;
     }
 
     public function getList($table) {
-        $sql = "SELECT jsondata FROM ${table}";
+        $userId = $this->app->getUserId();
+        $sql = "SELECT jsondata FROM ${table} WHERE userid = ?";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute(array($userId));
         $json = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
         foreach ($json as &$item) {
             $item = json_decode($item);
@@ -34,9 +34,11 @@ class WhiskeyDataController {
         HttpHelper::sendResponse("200 OK", $json);
     }
 
-    public function getItem($table, $id, $userId) {
-        if ($stmt = $this->conn->prepare("SELECT jsondata FROM ${table} WHERE id = ? LIMIT 0,1")) {
-            $stmt->execute(array($id));
+    public function getItem($table, $id) {
+        $userId = $this->app->getUserId();
+
+        if ($stmt = $this->conn->prepare("SELECT jsondata FROM ${table} WHERE userid = ? AND id = ? LIMIT 0,1")) {
+            $stmt->execute(array($userId, $id));
             $json = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
             if (count($json) == 1) {
                 HttpHelper::sendResponse("200 OK", json_decode($json[0]));

@@ -67,6 +67,7 @@ $router->before('GET', '/api/data.*', function () use ($app) {
 
 $router->mount('/api/data', function() use ($app, $router) {
     $router->setNamespace('\App');
+    
     $wdc = new \App\WhiskeyDataController($app);
     $router->get('/(.*)/(.*)', function($table, $id) use ($wdc) {$wdc->getItem($table, $id, null);});
     $router->get('/(.*)', function($table) use ($wdc) {$wdc->getList($table);});
