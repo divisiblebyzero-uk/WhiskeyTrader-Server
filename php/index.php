@@ -44,6 +44,8 @@ $router->before('GET', '/api/private.*', function () use ($app) {
 
     if (isset($_GET['token'])) {
         $requestHeaders['authorization'] = $_GET['token'];
+    } else if (isset($_ENV['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $requestHeaders['authorization'] = $_ENV['REDIRECT_HTTP_AUTHORIZATION'];
     }
 
     if (!isset($requestHeaders['authorization']) && !isset($requestHeaders['Authorization'])) {
@@ -73,7 +75,7 @@ $router->get('/api/public', function () use ($app) {
 });
 
 $router->get('/api/private', function () use ($app) {
-    sendResponse('200 OK', $app->privateEndpoint());
+    sendResponse('200 OK', $app->privateEndpoint().' '.json_encode(apache_request_headers()));
 });
 
 // Check for read:messages scope
