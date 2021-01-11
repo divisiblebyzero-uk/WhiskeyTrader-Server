@@ -50,7 +50,7 @@ class WhiskeyDataController {
             if ($stmt = $this->conn->prepare("REPLACE INTO ${table} (userid, id, jsondata) VALUES (?, ?, ?)")) {
                 $stmt->execute(array($userId, $id, $json));
             }
-            HttpHelper::sendLocation("/api/data/${table}/${id}", $item);
+            HttpHelper::sendResponse("200 OK", $item);
         } else {
             HttpHelper::sendResponse("500 Internal Server Error", "Invalid input data");
         }
