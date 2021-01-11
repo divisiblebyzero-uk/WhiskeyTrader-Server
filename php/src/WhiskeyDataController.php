@@ -4,19 +4,10 @@ use PDO;
 
 class WhiskeyDataController {
 
-    protected $dummyWhiskey = '{ "id": "2db1-df61-be7f-4659", "name": "Whiskey 1", "active": true, "distiller": "RuBrew", "description": "The first whiskey I ever tasted", "created": "2020-12-28T12:20:35.314Z", "updated": "2020-12-28T12:20:35.314Z" }';
-
-    protected $dummyWhiskeys;
     protected $conn;
     protected $app;
     
     public function __construct($app) {
-        
-        $this->dummyWhiskeys = array(
-            $this->dummyWhiskey,
-            $this->dummyWhiskey
-        );
-
         $db = new Database();
         $this->conn = $db->getConnection();
         $this->app = $app;
@@ -45,11 +36,25 @@ class WhiskeyDataController {
             } else if (count($json) == 0) {
                 HttpHelper::sendResponse("404 Not Found", "Object not found");
             }
-            HttpHelper::sendResponse("500 Error", "Too many rows returned");
+            HttpHelper::sendResponse("500 Internal Server Error", "Too many rows returned");
         }
         HttpHelper::sendResponse("404 Not Found", "Object not found");
     }
 
+    public function saveItem($table) {
+        $userId = $this->app->getUserId();
+        $json = file_get_contents('php://input');
+        $item = json_decode($json);
+        $id = $item->id;
+        if (json_last_error() == JSON_ERROR_NONE && isset($id)) {
+            if ($stmt = $this->conn->prepare("REPLACE INTO ${table} (userid, id, jsondata) VALUES (?, ?, ?)")) {
+                $stmt->execute(array($userId, $id, $json));
+            }
+            HttpHelper::sendLocation("/api/data/${table}/${id}", $item);
+        } else {
+            HttpHelper::sendResponse("500 Internal Server Error", "Invalid input data");
+        }
+    }
 }
 
 ?>

@@ -33,7 +33,7 @@ $router->options('/.*', function () {
 sendCorsHeaders();
 
 // Check JWT on private routes
-$router->before('GET', '/api/data.*', function () use ($app) {
+$router->before('GET|POST|PUT', '/api/data.*', function () use ($app) {
     $requestHeaders = apache_request_headers();
 
     if (isset($_GET['token'])) {
@@ -71,6 +71,8 @@ $router->mount('/api/data', function() use ($app, $router) {
     $wdc = new \App\WhiskeyDataController($app);
     $router->get('/(.*)/(.*)', function($table, $id) use ($wdc) {$wdc->getItem($table, $id, null);});
     $router->get('/(.*)', function($table) use ($wdc) {$wdc->getList($table);});
+
+    $router->put('/(.*)', function($table) use ($wdc) {$wdc->saveItem($table);});
 });
 
 $router->get('/api/public', function () use ($app) {

@@ -5,19 +5,19 @@ USE whiskeytrader;
 
 CREATE TABLE whiskeys (
   userid varchar(50) NOT NULL,
-  id varchar(25) NOT NULL,
+  id varchar(25) NOT NULL PRIMARY KEY,
   jsondata json NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE whiskeytrades (
   userid varchar(50) NOT NULL,
-  id varchar(25) NOT NULL,
+  id varchar(25) NOT NULL PRIMARY KEY,
   jsondata json NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE whiskeyprices (
   userid varchar(50) NOT NULL,
-  id varchar(25) NOT NULL,
+  id varchar(25) NOT NULL PRIMARY KEY,
   jsondata json NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
